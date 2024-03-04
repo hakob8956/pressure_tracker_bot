@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from datetime import datetime
 from telegram import Update, ForceReply
@@ -16,6 +17,7 @@ def init_db(db_path='blood_pressure.db'):
                      user_id INTEGER NOT NULL,
                      systolic INTEGER NOT NULL,
                      diastolic INTEGER NOT NULL,
+                     heart_rate INTEGER NULL,
                      reading_datetime DATETIME NOT NULL)''')
 
 # Command to start the bot and provide instructions
@@ -36,34 +38,38 @@ async def start(update: Update, context: CallbackContext) -> None:
 
 async def log(update: Update, context: CallbackContext) -> None:
     text = update.message.text
-    parts = text.split()
-    user_id = update.message.from_user.id
+    # Regex to match command with optional heart rate and optional datetime
+    match = re.match(
+        r'/log (\d+) (\d+)(?: (\d+))?(?: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}))?$', text)
 
-    if len(parts) == 3 or len(parts) == 5:
-        systolic, diastolic = parts[1], parts[2]
-        datetime_input = datetime.now() if len(parts) == 3 else datetime.strptime(
-            f"{parts[3]} {parts[4]}", "%Y-%m-%d %H:%M")
-        datetime_input = datetime_input.replace(
-            second=0, microsecond=0)  # Normalize datetime
+    if match:
+        systolic, diastolic = match.group(1), match.group(2)
+        heart_rate = match.group(3) if match.group(3) else None
+        datetime_str = match.group(4)
+        try:
+            datetime_input = datetime.now().replace(second=0, microsecond=0) if not datetime_str else datetime.strptime(
+                datetime_str, "%Y-%m-%d %H:%M").replace(second=0, microsecond=0)  # Normalize datetime
+        except ValueError:
+            await update.message.reply_text('Invalid date/time format. Please use YYYY-MM-DD HH:MM format.')
+            return
 
         with sqlite3.connect('blood_pressure.db') as conn:
             c = conn.cursor()
-            c.execute('''INSERT INTO blood_pressure_readings (user_id, systolic, diastolic, reading_datetime)
-                         VALUES (?, ?, ?, ?)''', (user_id, systolic, diastolic, datetime_input))
+            c.execute('''INSERT INTO blood_pressure_readings (user_id, systolic, diastolic, heart_rate, reading_datetime)
+                         VALUES (?, ?, ?, ?, ?)''', (update.message.from_user.id, systolic, diastolic, heart_rate, datetime_input))
 
-        await update.message.reply_text(f'Blood pressure logged successfully for {datetime_input.strftime("%Y-%m-%d %H:%M")}.')
+        await update.message.reply_text(f'Blood pressure (and heart rate, if provided) logged successfully for {datetime_input.strftime("%Y-%m-%d %H:%M")}.')
     else:
-        await update.message.reply_text('Usage: /log <systolic> <diastolic> [YYYY-MM-DD HH:MM]')
+        await update.message.reply_text('Usage: /log <systolic> <diastolic> [heart rate] [YYYY-MM-DD HH:MM]')
+
 
 # Generate a PDF report of the user's blood pressure readings
-
-
 def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date=None):
     filename = f'{user_id}_blood_pressure_report.pdf'
     pdf_canvas = canvas.Canvas(filename, pagesize=letter)
 
     # Build the base query with optional date range filtering
-    query = '''SELECT systolic, diastolic, reading_datetime FROM blood_pressure_readings 
+    query = '''SELECT systolic, diastolic, heart_rate, reading_datetime  FROM blood_pressure_readings 
                WHERE user_id = ?'''
     params = [user_id]
 
@@ -87,7 +93,7 @@ def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date
     text.textLine("Blood Pressure Readings Report")
 
     current_date = None
-    for systolic, diastolic, reading_datetime in readings:
+    for systolic, diastolic, heart_rate, reading_datetime in readings:
         reading_date = datetime.strptime(
             reading_datetime, "%Y-%m-%d %H:%M:%S").date()
         if reading_date != current_date:
@@ -101,7 +107,10 @@ def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date
         # Print the reading information
         time_str = datetime.strptime(
             reading_datetime, "%Y-%m-%d %H:%M:%S").strftime('%H:%M')
-        line = f"    {time_str} - Systolic: {systolic}, Diastolic: {diastolic}"
+        heart_str = ""
+        if (heart_rate):
+            heart_str = f", BPM: {heart_rate}"
+        line = f"    {time_str} - Systolic: {systolic}, Diastolic: {diastolic}{heart_str}"
         text.textLine(line)
 
     pdf_canvas.drawText(text)
@@ -189,7 +198,7 @@ async def help_command(update: Update, context: CallbackContext) -> None:
     help_text = """
 Here's how you can use this bot:
 /start - Start the bot and get a welcome message.
-/log <systolic> <diastolic> [YYYY-MM-DD HH:MM] - Log a new blood pressure reading. Date and time are optional.
+/log <systolic> <diastolic> [heart rate] [YYYY-MM-DD HH:MM] - Log a new blood pressure reading. Date and time are optional.
 /report [start_date] [end_date] - Generate a PDF report of your blood pressure readings. Date range is optional.
 /removelast - Remove the most recent blood pressure reading.
 /removebydate <YYYY-MM-DD> - Remove all readings for a specific date.
@@ -202,7 +211,7 @@ def main() -> None:
     """Start the bot."""
     init_db()  # Initialize the database
     application = Application.builder().token(
-        'YOUR_BOT_TOKEN').build()
+        '7088463256:AAGVZfLViO_yUh2IO_7txHKE5xYR4tPnVeU').build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("log", log))
