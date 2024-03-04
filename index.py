@@ -121,7 +121,7 @@ def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date
 
     # Append average blood pressure to the PDF
     text.textLine("")  # Spacer before averages
-    avg_line = f"Average Blood Pressure: Systolic: {round(avg_systolic, 2)}, Diastolic: {round(avg_diastolic, 2)} BPM: {round(avg_heart, 2)}"
+    avg_line = f"Average Blood Pressure: Systolic: {round(avg_systolic, 2)}, Diastolic: {round(avg_diastolic, 2)}, BPM: {round(avg_heart, 2)}"
     text.textLine(avg_line)
 
     # Finalize and save PDF
