@@ -7,7 +7,7 @@ def main() -> None:
     """Start the bot."""
     init_db()  # Initialize the database
     application = Application.builder().token(
-        '7088463256:AAGVZfLViO_yUh2IO_7txHKE5xYR4tPnVeU').build()
+        'YOUR_BOT_TOKEN').build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("log", log))
