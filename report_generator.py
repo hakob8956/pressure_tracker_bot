@@ -86,20 +86,22 @@ def add_blood_pressure_graph(pdf_canvas, readings, y_position):
     lp.xValueAxis.labelTextFormat = lambda x: dates[int(
         x)] if int(x) % skip_every == 0 else ''
 
-    # Y-axis configuration
-    # lp.yValueAxis.title = 'Pressure (mm Hg)'
-    y_axis_title = String(20, y_position - 75,
-
-                          'Pressure (mm Hg)', fontSize=10, textAnchor='middle')
-    drawing.add(y_axis_title)
-    # lp.yValueAxis.titleFontSize = 10
-    # lp.yValueAxis.labels.fontSize = 8
-
+    # Add the plot to the drawing
     drawing.add(lp)
 
-    # Adjust y_position based on the content above the graph
-    renderPDF.draw(drawing, pdf_canvas, 100,
-                   y_position - 200)  # Position the graph
+    # Render the drawing onto the PDF canvas at the specified position
+    renderPDF.draw(drawing, pdf_canvas, 100, y_position - 250)
+
+    # Manually add Y-axis title
+    pdf_canvas.saveState()
+    pdf_canvas.setFont("Helvetica", 10)
+    pdf_canvas.rotate(90)
+    pdf_canvas.drawString(y_position - 200, -120, "Pressure (mm Hg)")
+    pdf_canvas.restoreState()
+
+    # Manually add X-axis title
+    pdf_canvas.setFont("Helvetica", 10)
+    pdf_canvas.drawString(300, y_position - 240, "Time")
 
 
 def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date=None):
