@@ -1,5 +1,5 @@
 from telegram.ext import Application, CommandHandler
-from handlers import start, log, report, remove_last, remove_by_date, help_command
+from handlers import start, log, report, remove_last, remove_by_date, remove_all, help_command
 from db import init_db
 
 
@@ -14,6 +14,7 @@ def main() -> None:
     application.add_handler(CommandHandler("report", report))
     application.add_handler(CommandHandler("removelast", remove_last))
     application.add_handler(CommandHandler("removebydate", remove_by_date))
+    application.add_handler(CommandHandler("removeall", remove_all))
     application.add_handler(CommandHandler("help", help_command))
     application.run_polling()
 

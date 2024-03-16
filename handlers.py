@@ -2,10 +2,8 @@ import re
 import sqlite3
 from datetime import datetime
 from telegram import Update, ForceReply
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
 from telegram.ext import CallbackContext
-
+from report_generator import generate_pdf
 # Command to start the bot and provide instructions
 
 
@@ -123,8 +121,25 @@ async def remove_by_date(update: Update, context: CallbackContext) -> None:
         else:
             await update.message.reply_text("No readings found for the specified date.")
 
+# Command to remove all readings
 
-# Command to show help message
+
+async def remove_all(update: Update, context: CallbackContext) -> None:
+    user_id = update.message.from_user.id
+
+    with sqlite3.connect('blood_pressure.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            'DELETE FROM blood_pressure_readings WHERE user_id = ?', (user_id,))
+
+        conn.commit()
+
+        if cursor.rowcount > 0:
+            await update.message.reply_text("Blood pressure readings have been removed.")
+        else:
+            await update.message.reply_text("No readings found.")
+
+# Command to show help messages
 async def help_command(update: Update, context: CallbackContext) -> None:
     help_text = """
 Here's how you can use this bot:
@@ -133,74 +148,7 @@ Here's how you can use this bot:
 /report [start_date] [end_date] - Generate a PDF report of your blood pressure readings. Date range is optional.
 /removelast - Remove the most recent blood pressure reading.
 /removebydate <YYYY-MM-DD> - Remove all readings for a specific date.
+/removeall - Remove all readings.
 /help - Show this help message.
 """
     await update.message.reply_text(help_text)
-
-
-def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date=None):
-    filename = f'{user_id}_blood_pressure_report.pdf'
-    pdf_canvas = canvas.Canvas(filename, pagesize=letter)
-
-    # Base query to fetch readings
-    query = '''SELECT systolic, diastolic, heart_rate, reading_datetime FROM blood_pressure_readings WHERE user_id = ?'''
-    params = [user_id]
-
-    # Extend query for date filtering
-    if start_date and end_date:
-        query += " AND DATE(reading_datetime) BETWEEN ? AND ?"
-        params.extend([start_date.strftime("%Y-%m-%d"),
-                      end_date.strftime("%Y-%m-%d")])
-    elif start_date:  # Single day report
-        query += " AND DATE(reading_datetime) = ?"
-        params.append(start_date.strftime("%Y-%m-%d"))
-    query += " ORDER BY reading_datetime"
-
-    # Connect to the database and fetch readings
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.cursor()
-        cursor.execute(query, params)
-        readings = cursor.fetchall()
-
-    # Prepare to write on the PDF
-    text = pdf_canvas.beginText(40, 750)
-    text.setFont("Helvetica", 12)
-    text.textLine("Blood Pressure Readings Report")
-
-    # Loop through and add readings to PDF
-    current_date = None
-    for systolic, diastolic, heart_rate, reading_datetime in readings:
-        reading_date = datetime.strptime(
-            reading_datetime, "%Y-%m-%d %H:%M:%S").date()
-        if reading_date != current_date:
-            if current_date is not None:
-                text.textLine("")  # Spacer between days
-            date_header = reading_date.strftime('%A, %B %d, %Y')
-            text.textLine(date_header)
-            current_date = reading_date
-
-        time_str = datetime.strptime(
-            reading_datetime, "%Y-%m-%d %H:%M:%S").strftime('%H:%M')
-        heart_str = f", Heart Rate: {heart_rate}" if heart_rate else ""
-        line = f"    {time_str} - Systolic: {systolic}, Diastolic: {diastolic}{heart_str}"
-        text.textLine(line)
-
-    # Calculate and add average blood pressure
-    avg_query = '''SELECT AVG(systolic) AS avg_systolic, AVG(diastolic) AS avg_diastolic, AVG(heart_rate) AS avg_heart FROM blood_pressure_readings WHERE user_id = ?'''
-    if start_date and end_date:
-        avg_query += " AND DATE(reading_datetime) BETWEEN ? AND ?"
-    elif start_date:
-        avg_query += " AND DATE(reading_datetime) = ?"
-    cursor.execute(avg_query, params)
-    avg_systolic, avg_diastolic, avg_heart = cursor.fetchone()
-
-    # Append average blood pressure to the PDF
-    text.textLine("")  # Spacer before averages
-    avg_line = f"Average Blood Pressure: Systolic: {round(avg_systolic, 2)}, Diastolic: {round(avg_diastolic, 2)}, BPM: {round(avg_heart, 2)}"
-    text.textLine(avg_line)
-
-    # Finalize and save PDF
-    pdf_canvas.drawText(text)
-    pdf_canvas.save()
-
-    return filename
