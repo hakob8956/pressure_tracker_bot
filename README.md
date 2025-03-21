@@ -1,58 +1,66 @@
-# Blood Pressure Log Bot
+# Blood Pressure Tracking Telegram Bot
 
-The Blood Pressure Log Bot is a Telegram bot designed to help users track their blood pressure readings over time. It offers features for logging readings, generating reports, and managing logged data directly through Telegram.
+A Telegram bot for tracking blood pressure readings, generating reports, and providing medical advice based on your readings.
 
 ## Features
 
-- **Log Readings**: Users can log their systolic and diastolic blood pressure readings along with optional date and time.
-- **Generate Reports**: Generates a PDF report of blood pressure readings for a specified date range or all logged readings.
-- **Remove Readings**: Users can remove their most recent reading or all readings for a specific date.
+- Log blood pressure readings with optional heart rate and notes
+- Generate PDF reports of your readings with data visualization
+- Filter readings by date range and description pattern
+- Get AI-powered medical advice based on your readings
+- Manage your readings (remove last, by date, or all)
 
-## Getting Started
+## Setup
 
-### Prerequisites
-
-- Python 3.8+
-- SQLite3
-- Telegram account
-
-### Installation
-
-1. Clone the repository:
-2. Install the required Python packages:
+1. Clone this repository:
    ```
-   pip install python-telegram-bot reportlab
+   git clone https://github.com/yourusername/blood-pressure-bot.git
+   cd blood-pressure-bot
    ```
-3. Initialize the SQLite database:
-   ```
-   python -c 'from index import init_db; init_db()'
-   ```
-4. Set your Telegram Bot Token:
-   - Replace `'YOUR_BOT_TOKEN'` in the `main` function with your actual bot token provided by BotFather.
 
-### Running the Bot
+2. Create a virtual environment and install dependencies:
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-Run the bot with the following command:
+3. Create a `.env` file with your credentials:
+   ```
+   TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+   OPENAI_API_KEY=your_openai_api_key
+   LOG_LEVEL=INFO
+   ```
+
+4. Run the bot:
+   ```
+   python main.py
+   ```
+
+## Commands
+
+- `/start` - Start the bot and get a welcome message
+- `/log <systolic> <diastolic> [heart rate] [description] [YYYY-MM-DD HH:MM]` - Log a new reading
+- `/report [start_date] [end_date] pattern:"regex"` - Generate a PDF report
+- `/removelast` - Remove the most recent reading
+- `/removebydate <YYYY-MM-DD>` - Remove all readings for a specific date
+- `/removeall` - Remove all readings
+- `/summarize [start_date] [end_date] pattern:"regex"` - Get medical advice
+- `/help` - Show the help message
+
+## Project Structure
 
 ```
-python index.py
+blood_pressure_bot/
+├── main.py             # Application entry point
+├── config.py           # Configuration settings
+├── models/             # Data models and database interactions
+├── handlers/           # Telegram command handlers
+├── services/           # Business logic services
+├── utils/              # Helper utilities
+└── blood_pressure.db   # SQLite database
 ```
-
-## Usage
-
-- **Start the Bot**: Send `/start` to get started with the bot.
-- **Log a Reading**: Use `/log <systolic> <diastolic> [YYYY-MM-DD HH:MM]` to log a new blood pressure reading.
-- **Generate a Report**: Send `/report [start_date] [end_date]` to generate and receive a PDF report.
-- **Remove the Last Reading**: Use `/removelast` to remove your most recent reading.
-- **Remove Readings by Date**: Use `/removebydate <YYYY-MM-DD>` to remove all readings for a specific date.
-- **Help**: Send `/help` to see all available commands.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit pull requests, report bugs, or suggest new features.
 
 ## License
 
-[MIT](LICENSE) - See the LICENSE file for details.
-
----
+MIT License
