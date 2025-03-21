@@ -1,4 +1,8 @@
 # Blood Pressure Tracking Telegram Bot
+![Tests](https://github.com/hakob8956/pressure_tracker_bot/actions/workflows/python-tests.yml/badge.svg)
+
+[![codecov](https://codecov.io/gh/hakob8956/pressure_tracker_bot/branch/main/graph/badge.svg)](https://codecov.io/gh/hakob8956/pressure_tracker_bot)
+
 
 A Telegram bot for tracking blood pressure readings, generating reports, and providing medical advice based on your readings.
 
