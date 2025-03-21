@@ -5,15 +5,18 @@ from reportlab.lib import colors
 from reportlab.graphics.shapes import Drawing
 from reportlab.graphics.charts.lineplots import LinePlot
 from reportlab.graphics import renderPDF
+from reportlab.lib.utils import simpleSplit
 from models.reading import Reading
 from models.database import db
+from services.analysis_service import analyze_readings
 
 class ReportGenerator:
     """Service for generating PDF reports of blood pressure readings."""
     
-    def __init__(self, user_id, readings):
+    def __init__(self, user_id, readings, advice):
         self.user_id = user_id
         self.readings = readings
+        self.advice = advice
         self.filename = f'{user_id}_blood_pressure_report.pdf'
         self.pdf_canvas = canvas.Canvas(self.filename, pagesize=letter)
         self.y_position = 750  # Start position on the first page
@@ -92,11 +95,17 @@ class ReportGenerator:
         self.pdf_canvas.setFont("Helvetica", 12)  # Reset font for body text
         return y_position - 20
     
-    def _add_reading_entry(self, line, y_position):
-        """Add a reading entry with standard body text style."""
+    def _add_reading_entry(self, line, y_position, max_width=500):
+        """Add a reading entry with standard body text style, wrapping long lines."""
         self.pdf_canvas.setFont("Helvetica", 12)
-        self.pdf_canvas.drawString(40, y_position, line)
-        return y_position - 15
+
+        # Split the line into wrapped lines that fit within the max width
+        wrapped_lines = simpleSplit(line, "Helvetica", 12, max_width)
+
+        for wrapped_line in wrapped_lines:
+            self.pdf_canvas.drawString(40, y_position, wrapped_line)
+            y_position -= 15  # Move to the next line
+        return y_position
     
     def _add_filter_info(self, start_date, end_date, regex_pattern):
         """Add filter information to the report."""
@@ -136,6 +145,26 @@ class ReportGenerator:
                 current_date = reading_date
             
             self.y_position = self._add_reading_entry(str(reading), self.y_position)
+
+    def _add_ai_recommendations(self):
+        """Add AI medical recommendations to the report."""
+        self.y_position = self._check_add_new_page(self.pdf_canvas, self.y_position, margin=150)
+        self.y_position = self._add_section_header("AI Medical Recommendations:", self.y_position)
+
+        # Display the advice generated earlier
+        if self.advice:
+            max_width = 500  # Maximum width for the text
+            font_size = 12
+            self.pdf_canvas.setFont("Helvetica", font_size)
+
+            # Split the advice into lines that fit within the max width
+            wrapped_lines = simpleSplit(self.advice, "Helvetica", font_size, max_width)
+
+            for line in wrapped_lines:
+                self.y_position = self._add_reading_entry(line, self.y_position)
+                self.y_position = self._check_add_new_page(self.pdf_canvas, self.y_position)
+        else:
+            self.y_position = self._add_reading_entry("No specific recommendations available.", self.y_position)
     
     def _add_blood_pressure_graph(self, readings):
         """Add a blood pressure graph to the report."""
@@ -192,6 +221,10 @@ class ReportGenerator:
         self.pdf_canvas.setFont("Helvetica", 10)
         self.pdf_canvas.drawString(300, self.y_position - 240, "Time")
 
+         # Add AI medical recommendations
+        self.y_position -= 270  # Adjust position for recommendations
+        self._add_ai_recommendations()
+
 def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date=None, regex_pattern=None):
     """
     Generate a PDF report of blood pressure readings.
@@ -199,7 +232,7 @@ def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date
     """
     # Get readings from the database
     readings = db.get_readings(user_id, start_date, end_date, regex_pattern)
-    
+    advice = analyze_readings(readings, user_id, start_date, end_date, regex_pattern)
     # Generate the report
-    report_generator = ReportGenerator(user_id, readings)
+    report_generator = ReportGenerator(user_id, readings, advice)
     return report_generator.generate(start_date, end_date, regex_pattern)

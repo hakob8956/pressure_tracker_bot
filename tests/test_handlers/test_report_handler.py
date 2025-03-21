@@ -19,6 +19,11 @@ async def test_report_handler_basic(mock_remove, mock_exists, mock_file, mock_ge
     # Execute the handler
     await report(mock_update, mock_context)
     
+    # Check that initial notification was sent
+    assert mock_update.message.reply_text.call_count >= 1
+    first_call = mock_update.message.reply_text.call_args_list[0]
+    assert "Generating your blood pressure report" in first_call[0][0]
+    
     # Check that generate_pdf was called with correct parameters
     mock_generate_pdf.assert_called_once_with(
         12345, start_date=None, end_date=None, regex_pattern=None
@@ -46,6 +51,9 @@ async def test_report_handler_with_date(mock_remove, mock_exists, mock_file, moc
     # Execute the handler
     await report(mock_update, mock_context)
     
+    # Check for initial notification
+    assert "Generating your blood pressure report" in mock_update.message.reply_text.call_args_list[0][0][0]
+    
     # Check that generate_pdf was called with correct date parameters
     mock_generate_pdf.assert_called_once()
     call_args = mock_generate_pdf.call_args[1]
@@ -71,6 +79,9 @@ async def test_report_handler_with_date_range(mock_remove, mock_exists, mock_fil
     # Execute the handler
     await report(mock_update, mock_context)
     
+    # Check for initial notification
+    assert "Generating your blood pressure report" in mock_update.message.reply_text.call_args_list[0][0][0]
+    
     # Check that generate_pdf was called with correct date parameters
     mock_generate_pdf.assert_called_once()
     call_args = mock_generate_pdf.call_args[1]
@@ -92,6 +103,9 @@ async def test_report_handler_with_regex(mock_remove, mock_exists, mock_file, mo
     # Execute the handler
     await report(mock_update, mock_context)
     
+    # Check for initial notification
+    assert "Generating your blood pressure report" in mock_update.message.reply_text.call_args_list[0][0][0]
+    
     # Check that generate_pdf was called with correct regex parameter
     mock_generate_pdf.assert_called_once()
     call_args = mock_generate_pdf.call_args[1]
@@ -110,9 +124,10 @@ async def test_report_handler_invalid_date(mock_generate_pdf, mock_update, mock_
     # Check that generate_pdf was not called
     mock_generate_pdf.assert_not_called()
     
-    # Check that error message was sent
-    mock_update.message.reply_text.assert_called_once()
-    assert "Invalid date format" in mock_update.message.reply_text.call_args[0][0]
+    # Check that initial notification was sent, followed by error message
+    assert mock_update.message.reply_text.call_count >= 2
+    assert "Generating your blood pressure report" in mock_update.message.reply_text.call_args_list[0][0][0]
+    assert "Invalid date format" in mock_update.message.reply_text.call_args_list[1][0][0]
 
 @pytest.mark.asyncio
 @patch('handlers.report_handler.generate_pdf')
@@ -127,9 +142,10 @@ async def test_report_handler_invalid_regex(mock_generate_pdf, mock_update, mock
     # Check that generate_pdf was not called
     mock_generate_pdf.assert_not_called()
     
-    # Check that error message was sent
-    mock_update.message.reply_text.assert_called_once()
-    assert "Invalid regex pattern" in mock_update.message.reply_text.call_args[0][0]
+    # Check for initial notification followed by error message
+    assert mock_update.message.reply_text.call_count >= 2
+    assert "Generating your blood pressure report" in mock_update.message.reply_text.call_args_list[0][0][0]
+    assert "Invalid regex pattern" in mock_update.message.reply_text.call_args_list[1][0][0]
 
 @pytest.mark.asyncio
 @patch('handlers.report_handler.generate_pdf')
@@ -142,6 +158,7 @@ async def test_report_handler_pdf_error(mock_generate_pdf, mock_update, mock_con
     # Execute the handler
     await report(mock_update, mock_context)
     
-    # Check error message was sent
-    mock_update.message.reply_text.assert_called_once()
-    assert "An error occurred" in mock_update.message.reply_text.call_args[0][0]
+    # Check for initial notification followed by error message
+    assert mock_update.message.reply_text.call_count >= 2
+    assert "Generating your blood pressure report" in mock_update.message.reply_text.call_args_list[0][0][0]
+    assert "An error occurred" in mock_update.message.reply_text.call_args_list[1][0][0]

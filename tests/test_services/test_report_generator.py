@@ -13,7 +13,7 @@ def test_report_generator_init(mock_canvas):
     ]
     
     # Initialize ReportGenerator
-    generator = ReportGenerator(12345, readings)
+    generator = ReportGenerator(12345, readings, "Test advice")
     
     # Check that canvas was created
     mock_canvas.assert_called_once()
@@ -29,7 +29,7 @@ def test_report_generator_empty_readings(mock_canvas):
     mock_canvas.return_value = mock_pdf
     
     # Initialize with empty readings
-    generator = ReportGenerator(12345, [])
+    generator = ReportGenerator(12345, [], "Test advice")
     
     # Generate report
     filename = generator.generate()
@@ -57,7 +57,7 @@ def test_report_generator_with_readings(mock_canvas):
     ]
     
     # Initialize with readings
-    generator = ReportGenerator(12345, readings)
+    generator = ReportGenerator(12345, readings, "Test advice")
     
     # Generate report
     filename = generator.generate()
@@ -84,7 +84,7 @@ def test_report_generator_with_filters(mock_canvas):
     ]
     
     # Initialize with readings
-    generator = ReportGenerator(12345, readings)
+    generator = ReportGenerator(12345, readings, "Test advice")
     
     # Generate report with filters
     start_date = date(2023, 1, 1)

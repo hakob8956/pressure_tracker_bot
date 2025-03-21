@@ -9,16 +9,19 @@ async def report(update: Update, context: CallbackContext) -> None:
     """Command to generate a PDF report of blood pressure readings."""
     user_id = update.message.from_user.id
     full_text = update.message.text
-    
+
+    # Inform the user that the report is being generated
+    await update.message.reply_text("Generating your blood pressure report. Please wait...")
+
     # Initialize variables
     start_date = end_date = None
-    
+
     # Extract regex pattern from the command
     regex_pattern, clean_text = extract_regex_pattern(full_text)
-    
+
     # Split the remaining text to get command and date arguments
     args = clean_text.strip().split()
-    
+
     # Process date arguments
     try:
         if len(args) >= 3:  # /report + two dates
@@ -29,7 +32,7 @@ async def report(update: Update, context: CallbackContext) -> None:
     except ValueError as e:
         await update.message.reply_text(str(e))
         return
-    
+
     # Validate regex pattern
     if regex_pattern:
         try:
@@ -39,7 +42,7 @@ async def report(update: Update, context: CallbackContext) -> None:
                 f'Invalid regex pattern: "{regex_pattern}". Please check your pattern syntax.'
             )
             return
-    
+
     try:
         # Generate the report
         filename = generate_pdf(user_id, start_date=start_date, end_date=end_date, 
