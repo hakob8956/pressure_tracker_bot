@@ -10,7 +10,7 @@ Here's how you can use this bot:
 
 /log <systolic> <diastolic> [heart rate] [description] [YYYY-MM-DD HH:MM] - Log a new blood pressure reading. Heart rate, description, date, and time are optional.
 
-/report [start_date] [end_date] pattern:"regex" - Generate a PDF report of your blood pressure readings. Date range and regex pattern for filtering descriptions are optional.
+/report [start_date] [end_date] pattern:"regex" - Generate a PDF report of your blood pressure readings with AI recommendation. Date range and regex pattern for filtering descriptions are optional.
 
 /removelast - Remove the most recent blood pressure reading.
 
