@@ -17,18 +17,17 @@ async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_markdown_v2(start_message, reply_markup=ForceReply(selective=True))
 
 # Command to log a new blood pressure reading
-
-
 async def log(update: Update, context: CallbackContext) -> None:
     text = update.message.text
-    # Regex to match command with optional heart rate and optional datetime
+    # Regex to match command with optional heart rate, optional description, and optional datetime
     match = re.match(
-        r'/log (\d+) (\d+)(?: (\d+))?(?: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}))?$', text)
+        r'/log (\d+) (\d+)(?: (\d+))?(?: (.+?))?(?: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}))?$', text)
 
     if match:
         systolic, diastolic = match.group(1), match.group(2)
         heart_rate = match.group(3) if match.group(3) else None
-        datetime_str = match.group(4)
+        description = match.group(4) if match.group(4) else None
+        datetime_str = match.group(5)
         try:
             datetime_input = datetime.now().replace(second=0, microsecond=0) if not datetime_str else datetime.strptime(
                 datetime_str, "%Y-%m-%d %H:%M").replace(second=0, microsecond=0)  # Normalize datetime
@@ -38,13 +37,12 @@ async def log(update: Update, context: CallbackContext) -> None:
 
         with sqlite3.connect('blood_pressure.db') as conn:
             c = conn.cursor()
-            c.execute('''INSERT INTO blood_pressure_readings (user_id, systolic, diastolic, heart_rate, reading_datetime)
-                         VALUES (?, ?, ?, ?, ?)''', (update.message.from_user.id, systolic, diastolic, heart_rate, datetime_input))
+            c.execute('''INSERT INTO blood_pressure_readings (user_id, systolic, diastolic, heart_rate, reading_datetime, description)
+                         VALUES (?, ?, ?, ?, ?, ?)''', (update.message.from_user.id, systolic, diastolic, heart_rate, datetime_input, description))
 
         await update.message.reply_text(f'Blood pressure (and heart rate, if provided) logged successfully for {datetime_input.strftime("%Y-%m-%d %H:%M")}.')
     else:
-        await update.message.reply_text('Usage: /log <systolic> <diastolic> [heart rate] [YYYY-MM-DD HH:MM]')
-
+        await update.message.reply_text('Usage: /log <systolic> <diastolic> [heart rate] [description] [YYYY-MM-DD HH:MM]')
 
 # Command to send the PDF report
 async def report(update: Update, context: CallbackContext) -> None:
@@ -144,7 +142,7 @@ async def help_command(update: Update, context: CallbackContext) -> None:
     help_text = """
 Here's how you can use this bot:
 /start - Start the bot and get a welcome message.
-/log <systolic> <diastolic> [heart rate] [YYYY-MM-DD HH:MM] - Log a new blood pressure reading. Date and time are optional.
+/log <systolic> <diastolic> [heart rate] [description] [YYYY-MM-DD HH:MM] - Log a new blood pressure reading. Heart rate, description, date, and time are optional.
 /report [start_date] [end_date] - Generate a PDF report of your blood pressure readings. Date range is optional.
 /removelast - Remove the most recent blood pressure reading.
 /removebydate <YYYY-MM-DD> - Remove all readings for a specific date.

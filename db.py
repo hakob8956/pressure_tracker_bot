@@ -1,8 +1,6 @@
 import sqlite3
 
 # Initialize SQLite Database
-
-
 def init_db(db_path='blood_pressure.db'):
     with sqlite3.connect(db_path) as conn:
         c = conn.cursor()
@@ -12,4 +10,5 @@ def init_db(db_path='blood_pressure.db'):
                      systolic INTEGER NOT NULL,
                      diastolic INTEGER NOT NULL,
                      heart_rate INTEGER NULL,
-                     reading_datetime DATETIME NOT NULL)''')
+                     reading_datetime DATETIME NOT NULL,
+                     description TEXT NULL)''')

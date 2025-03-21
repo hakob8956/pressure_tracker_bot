@@ -131,7 +131,7 @@ def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date
         avg_systolic, avg_diastolic, avg_heart = cursor.fetchone()
 
     current_date = None
-    for systolic, diastolic, heart_rate, reading_datetime in readings:
+    for systolic, diastolic, heart_rate, reading_datetime, description in readings:
         y_position = check_add_new_page(pdf_canvas, y_position)
 
         reading_date = datetime.strptime(
@@ -152,7 +152,8 @@ def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date
         time_str = datetime.strptime(
             reading_datetime, "%Y-%m-%d %H:%M:%S").strftime('%H:%M')
         heart_str = f", Heart Rate: {heart_rate}" if heart_rate else ""
-        line = f"{time_str} - Systolic: {systolic}, Diastolic: {diastolic}{heart_str}"
+        description_str = f", Description: {description}" if description else ""
+        line = f"{time_str} - Systolic: {systolic}, Diastolic: {diastolic}{heart_str}{description_str}"
         y_position = add_reading_entry(pdf_canvas, line, y_position)
 
     # Ensure space for averages
@@ -177,7 +178,7 @@ def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date
 
 def prepare_query(user_id, start_date, end_date):
     """Prepare the database query and parameters."""
-    query = '''SELECT systolic, diastolic, heart_rate, reading_datetime FROM blood_pressure_readings WHERE user_id = ?'''
+    query = '''SELECT systolic, diastolic, heart_rate, reading_datetime, description FROM blood_pressure_readings WHERE user_id = ?'''
     params = [user_id]
     if start_date and end_date:
         query += " AND DATE(reading_datetime) BETWEEN ? AND ?"
