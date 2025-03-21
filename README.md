@@ -58,8 +58,57 @@ blood_pressure_bot/
 ├── handlers/           # Telegram command handlers
 ├── services/           # Business logic services
 ├── utils/              # Helper utilities
+├── tests/              # Unit and integration tests
 └── blood_pressure.db   # SQLite database
 ```
+
+## Testing
+
+The project includes comprehensive test coverage for all components:
+
+```
+tests/
+├── conftest.py                # Pytest fixtures
+├── test_handlers/             # Tests for all Telegram command handlers
+├── test_models/               # Tests for database and data models
+├── test_services/             # Tests for business logic services
+└── test_utils/                # Tests for helper utilities
+```
+
+### Running Tests
+
+Run all tests:
+
+```
+pytest
+```
+
+Run specific test modules:
+
+```
+pytest tests/test_handlers/test_log_handler.py
+```
+
+Run with coverage report:
+
+```
+pytest --cov=. --cov-report=term-missing
+```
+
+### Test Features
+
+- **Isolated testing**: All tests use mocking to avoid external API calls
+- **No token usage**: Tests for AI features don't consume OpenAI API tokens
+- **Database testing**: Uses file-based SQLite databases for reliable testing
+- **Comprehensive coverage**: Tests include success cases, edge cases, and error handling
+
+### Testing Dependencies
+
+All testing dependencies are included in requirements.txt:
+- pytest
+- pytest-asyncio
+- pytest-cov
+- pytest-mock
 
 ## License
 
