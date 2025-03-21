@@ -34,7 +34,7 @@ def analyze_readings(readings, user_id, start_date=None, end_date=None, regex_pa
     prompt = (
         f"Here are the blood pressure readings for a user:\n{formatted_readings}\n\n"
         "Please analyze the data and provide medical advice if needed. "
-        "Provide all advice in simple, non-technical language since the user is not a medical professional. "
+        "Provide all advice in simple, short, non-technical language since the user is not a medical professional. "
         "Format your response as plain text only. "
         "DO NOT USE ANY MARKDOWN FORMATTING watsoever - no headings, no bold, no lists with asterisks or numbers, no special characters. "
         "Use only regular paragraphs with line breaks. "
