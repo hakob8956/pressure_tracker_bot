@@ -7,7 +7,7 @@ from reportlab.graphics.shapes import Drawing
 from reportlab.graphics.charts.lineplots import LinePlot
 from reportlab.graphics import renderPDF
 from reportlab.graphics.shapes import String
-
+import re
 
 def create_pdf_header(pdf_canvas, y_position):
     """Function to create the PDF header with enhanced style."""
@@ -104,7 +104,8 @@ def add_blood_pressure_graph(pdf_canvas, readings, y_position):
     pdf_canvas.drawString(300, y_position - 240, "Time")
 
 
-def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date=None):
+def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date=None, regex_pattern=None):
+    print(regex_pattern)
     filename = f'{user_id}_blood_pressure_report.pdf'
     pdf_canvas = canvas.Canvas(filename, pagesize=letter)
     y_position = 750  # Start position on the first page
@@ -119,17 +120,54 @@ def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute(query, params)
-        readings = cursor.fetchall()
+        
+        # Fetch all readings
+        all_readings = cursor.fetchall()
+        
+        # Apply regex filtering if a pattern is provided
+        if regex_pattern:
+            filtered_readings = []
+            for reading in all_readings:
+                # Check if the description matches the regex pattern
+                # Reading format: (systolic, diastolic, heart_rate, reading_datetime, description)
+                description = reading[4]
+                if description and re.search(regex_pattern, description):
+                    filtered_readings.append(reading)
+            readings = filtered_readings
+        else:
+            readings = all_readings
 
-        # Calculate averages
-        avg_query = '''SELECT AVG(systolic) AS avg_systolic, AVG(diastolic) AS avg_diastolic, AVG(heart_rate) AS avg_heart FROM blood_pressure_readings WHERE user_id = ?'''
-        if start_date and end_date:
-            avg_query += " AND DATE(reading_datetime) BETWEEN ? AND ?"
-        elif start_date:
-            avg_query += " AND DATE(reading_datetime) = ?"
-        cursor.execute(avg_query, params)
-        avg_systolic, avg_diastolic, avg_heart = cursor.fetchone()
+        # If no readings after filtering, add a message
+        if not readings:
+            pdf_canvas.setFont("Helvetica", 12)
+            pdf_canvas.drawString(40, y_position, "No blood pressure readings found matching your criteria.")
+            pdf_canvas.save()
+            return filename
 
+        # Calculate averages based on filtered readings
+        avg_systolic = sum(float(r[0]) for r in readings) / len(readings)
+        avg_diastolic = sum(float(r[1]) for r in readings) / len(readings)
+        
+        # Calculate average heart rate (excluding None values)
+        heart_rates = [float(r[2]) for r in readings if r[2] is not None]
+        avg_heart = sum(heart_rates) / len(heart_rates) if heart_rates else None
+
+    # Add filter information to the report
+    filter_info = []
+    if start_date and end_date and start_date == end_date:
+        filter_info.append(f"Date: {start_date.strftime('%Y-%m-%d')}")
+    elif start_date and end_date:
+        filter_info.append(f"Date Range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+    if regex_pattern:
+        filter_info.append(f"Description Filter: Pattern \"{regex_pattern}\"")
+    
+    if filter_info:
+        y_position = add_section_header(pdf_canvas, "Report Filters:", y_position)
+        for info in filter_info:
+            y_position = add_reading_entry(pdf_canvas, info, y_position)
+        y_position -= 20  # Add some space after filters
+
+    # Process and display readings, maintaining the original formatting from the code
     current_date = None
     for systolic, diastolic, heart_rate, reading_datetime, description in readings:
         y_position = check_add_new_page(pdf_canvas, y_position)
@@ -165,16 +203,17 @@ def generate_pdf(user_id, db_path='blood_pressure.db', start_date=None, end_date
     pdf_canvas.setFont("Helvetica-Bold", 12)
     pdf_canvas.drawString(40, y_position, avg_line)
 
-    graph_space_required = 250
-    y_position = check_add_new_page(
-        pdf_canvas, y_position, graph_space_required)
+    # Add graph if we have enough data
+    if len(readings) > 1:  # Only add graph if there's more than one reading
+        graph_space_required = 250
+        y_position = check_add_new_page(
+            pdf_canvas, y_position, graph_space_required)
 
-    add_blood_pressure_graph(pdf_canvas, readings, y_position)
-    y_position -= graph_space_required
+        add_blood_pressure_graph(pdf_canvas, readings, y_position)
+        y_position -= graph_space_required
 
     pdf_canvas.save()
     return filename
-
 
 def prepare_query(user_id, start_date, end_date):
     """Prepare the database query and parameters."""
