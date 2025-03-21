@@ -12,7 +12,7 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 DB_PATH = 'blood_pressure.db'
 
 # AI Model configuration
-AI_MODEL = "gpt-4"
+AI_MODEL = "gpt-4o"
 
 # Application configuration
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
